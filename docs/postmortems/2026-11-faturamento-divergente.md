@@ -10,8 +10,9 @@ ninguém soube explicar de onde veio a diferença.
 ## Linha do tempo
 - HH:MM a diferença apareceu na reunião de resultados
 - HH:MM issue aberta com a label `incidente`
-- HH:MM investigação: os arquivos e o banco estavam inteiros; o pedido 6, com
-  status "estornado", estava somado no `fct_pedidos`
+- HH:MM investigação: os arquivos e o banco estavam inteiros; 135 pedidos com
+  status "estornado", que começou a chegar em 20/10, estavam somados no
+  `fct_pedidos` (R$ 18.251,00)
 - HH:MM negócio confirmou: estorno é válido e não entra no faturamento
 - HH:MM correção em produção e issue fechada
 
