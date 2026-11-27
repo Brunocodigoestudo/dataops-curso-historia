@@ -1,12 +1,18 @@
-# dataops-curso
+# dataops-curso-historia
 
 Projeto prático do curso **Engenharia de Dados: DataOps, CI/CD e Liderança Técnica** (Alura), com Bruno Corrêa.
 
 Ao longo das aulas, um pipeline de dados de uma loja (pedidos, clientes e produtos) sai do nível 1 de maturidade, com scripts que funcionam mas sem testes nem automação, e chega a um projeto com testes, CI/CD, padrões de código e métricas.
 
+## O caso
+
+Na reunião de resultados, o relatório mostrou um faturamento de outubro diferente do que o financeiro fechou, e ninguém soube explicar de onde veio o número. Você é o engenheiro de dados da loja: ao longo das aulas, vai investigar o erro, corrigir e garantir que ele não volte.
+
 ## Comandos da Aula 2 · Testes automatizados
 
 Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Você começa da branch `aula-01-inicio` e traz os arquivos desta branch com `git checkout`. Na Aula 2 você trabalha direto na `main`.
+
+Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhum teste avisou. Agora os testes provam o erro, a regra é corrigida e o projeto passa a barrar status desconhecidos antes do relatório.
 
 ### 2.1 · A pirâmide de testes
 
@@ -16,7 +22,7 @@ Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco)
 git checkout origin/aula-02-testes -- src/transformacoes.py tests/__init__.py tests/test_transformacoes.py
 ```
 
-**2. Ler a regra e os testes.** A regra é uma função pura: recebe uma lista e devolve uma lista. São três testes, e o `parametrize` roda o mesmo teste com vários cenários.
+**2. Ler a regra e os testes.** A regra é uma função pura: recebe uma lista e devolve uma lista. São quatro testes, e o `parametrize` roda o mesmo teste com vários cenários. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
 
 ```bash
 code src/transformacoes.py
@@ -29,7 +35,7 @@ code tests/test_transformacoes.py
 pytest -v
 ```
 
-Resultado esperado: `5 passed`.
+Resultado esperado: `6 passed`.
 
 **4. Ver o teste falhar, de propósito.** Em `src/transformacoes.py`, troque `round(p["quantidade"] * p["preco_unitario"], 2)` por `p["quantidade"] * p["preco_unitario"]`, salve e rode:
 
@@ -37,7 +43,7 @@ Resultado esperado: `5 passed`.
 pytest -v
 ```
 
-Resultado esperado: `1 failed`, com o valor `0.30000000000000004`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `5 passed`.
+Resultado esperado: `1 failed`, com o valor `0.30000000000000004`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `6 passed`.
 
 ### 2.2 · Integração e idempotência
 
@@ -55,7 +61,7 @@ code tests/test_integracao.py
 pytest -v
 ```
 
-Resultado esperado: `7 passed`.
+Resultado esperado: `8 passed`.
 
 **3. Ver a idempotência quebrar, de propósito.** Em `src/pipeline.py`, troque `CREATE OR REPLACE TABLE` por `CREATE TABLE IF NOT EXISTS`, salve e rode:
 
@@ -63,11 +69,11 @@ Resultado esperado: `7 passed`.
 pytest -v
 ```
 
-Resultado esperado: `1 failed`, com `assert 2 == 1`. O pedido apareceu duas vezes. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `7 passed`.
+Resultado esperado: `1 failed`, com `assert 2 == 1`. O pedido apareceu duas vezes. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `8 passed`.
 
 ### 2.3 · Testando dados com dbt
 
-**1. Trazer os testes de dados.** Testes do staging, unit test do mart e o teste singular.
+**1. Trazer os testes de dados.** Testes do staging, unit tests do mart e o teste singular. A regra do `fct_pedidos` ainda é a antiga, a mesma que gerou o número errado.
 
 ```bash
 git checkout origin/aula-02-testes -- models/staging/_staging.yml models/marts/_marts.yml tests/assert_valor_total_positivo.sql
@@ -76,25 +82,39 @@ code models/marts/_marts.yml
 code tests/assert_valor_total_positivo.sql
 ```
 
-**2. Rodar modelos e testes juntos.** O `dbt build` roda os modelos e os testes na ordem do grafo.
+No `_staging.yml`, o `accepted_values` lista os status que a loja conhece. No `_marts.yml`, o unit test `valor_total_ignora_estornados` diz o que o faturamento deveria fazer com um estorno.
+
+**2. Rodar modelos e testes juntos.** O primeiro comando carrega os CSVs. O `dbt build` roda os modelos e os testes na ordem do grafo.
 
 ```bash
-dbt build
-```
-
-Resultado esperado: `PASS=11`.
-
-**3. Colocar um dado ruim, de propósito.** Acrescenta um pedido com o id repetido no fim do CSV, carrega de novo e roda o build.
-
-```bash
-echo "5,3,10,1,12.50,pago,2026-10-05" >> data/pedidos.csv
 python -m src.ingestao
 dbt build
 ```
 
-Resultado esperado: `FAIL` no teste `unique`, `ERROR=1` e `SKIP=3`. O dado ruim foi barrado no staging.
+Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados`, `ERROR=1` e `SKIP=2`. O teste reproduziu o erro da reunião: o pedido 6, estornado, apareceu no resultado.
 
-**4. Desfazer.** Volta o CSV ao original, carrega de novo e roda o build.
+**3. Corrigir a regra.** Traz o `fct_pedidos` corrigido: cancelados e estornados ficam fora do faturamento.
+
+```bash
+git checkout origin/aula-02-testes -- models/marts/fct_pedidos.sql
+code models/marts/fct_pedidos.sql
+dbt build
+python scripts/faturamento.py
+```
+
+Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 63,10 em 4 pedidos`. O número agora bate com o financeiro.
+
+**4. Chegar um status novo, de propósito.** Acrescenta um pedido com o status `devolvido`, que a loja ainda não conhece, carrega de novo e roda o build.
+
+```bash
+echo "7,1,10,1,12.50,devolvido,2026-10-06" >> data/pedidos.csv
+python -m src.ingestao
+dbt build
+```
+
+Resultado esperado: `FAIL 1` no teste `accepted_values` do status, `ERROR=1` e `SKIP=4`. O teste funciona como um porteiro: barrou o status desconhecido antes de ele chegar ao relatório. O teste não corrige o dado, ele avisa. O que fazer com o status novo é decisão do engenheiro com o negócio.
+
+**5. Desfazer.** Volta o CSV ao original, carrega de novo e roda o build.
 
 ```bash
 git checkout data/pedidos.csv
@@ -102,7 +122,7 @@ python -m src.ingestao
 dbt build
 ```
 
-Resultado esperado: `PASS=11`.
+Resultado esperado: `PASS=12`.
 
 ### 2.4 · Cobertura de testes
 
@@ -127,13 +147,13 @@ code tests/test_ingestao.py
 pytest --cov=src --cov-report=term-missing --cov-fail-under=80
 ```
 
-Resultado esperado: `8 passed` e `96%`.
+Resultado esperado: `9 passed` e `96%`.
 
 **4. Salvar a aula no Git.** Prepara os arquivos, registra o commit e envia para o GitHub.
 
 ```bash
 git add .
-git commit -m "test: testes unitarios, integracao e dbt"
+git commit -m "fix: estornado fora do faturamento, com testes"
 git push
 ```
 
@@ -168,21 +188,22 @@ Cada branch guarda o estado do projeto **ao final** da aula. Para acompanhar uma
 
 | Branch | Estado do projeto |
 | --- | --- |
-| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI |
-| `aula-02-testes` | Testes com pytest, testes de dados do dbt e cobertura |
-| `aula-03-ci-cd` | CI em todo pull request e deploy em staging e production com aprovação |
-| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e primeiro ADR |
-| `aula-05-lideranca` | Documentação dos modelos e runbook de incidentes |
-| `aula-06-metricas` | Postmortem, teste novo a partir do incidente e métricas DORA |
+| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI. O faturamento chega errado na reunião |
+| `aula-02-testes` | Testes com pytest, testes de dados do dbt, cobertura e a correção do faturamento |
+| `aula-03-ci-cd` | CI em todo pull request barrando a regra antiga e deploy em staging e production com aprovação |
+| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e ADRs, incluindo a regra do faturamento |
+| `aula-05-lideranca` | Documentação dos modelos e runbook de incidente de dados |
+| `aula-06-metricas` | Postmortem do faturamento divergente e métricas DORA |
 
 ## Estrutura
 
 ```text
-dataops-curso/
+dataops-curso-historia/
 ├── .devcontainer/     ambiente do Codespaces
 ├── data/              CSVs de origem
 ├── src/               ingestão e transformações em Python
 ├── models/            modelos dbt (staging e marts)
+├── scripts/           faturamento e consultas ao banco
 ├── dbt_project.yml
 ├── profiles.yml
 └── requirements.txt

@@ -14,6 +14,12 @@ def test_remove_pedidos_cancelados():
     assert calcular_valor_total(pedidos) == []
 
 
+def test_remove_pedidos_estornados():
+    # teste nascido do faturamento que chegou errado na reunião
+    pedidos = [{"quantidade": 1, "preco_unitario": 89.9, "status": "estornado"}]
+    assert calcular_valor_total(pedidos) == []
+
+
 @pytest.mark.parametrize("qtd, preco, esperado", [
     (1, 0.1, 0.1),
     (3, 0.1, 0.3),      # sem o round, 3 * 0.1 daria 0.30000000000000004
