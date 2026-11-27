@@ -91,7 +91,7 @@ python -m src.ingestao
 dbt build
 ```
 
-Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados`, `ERROR=1` e `SKIP=2`. O teste reproduziu o erro da reunião: o pedido 6, estornado, apareceu no resultado.
+Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados`, `ERROR=1` e `SKIP=2`. O teste reproduziu o erro da reunião: o pedido estornado apareceu no resultado, somado ao faturamento.
 
 **3. Corrigir a regra.** Traz o `fct_pedidos` corrigido: cancelados e estornados ficam fora do faturamento.
 
