@@ -7,7 +7,7 @@ from statistics import median
 
 import requests
 
-REPO = "Brunocodigoestudo/dataops-curso"
+REPO = "Brunocodigoestudo/dataops-curso-historia"
 API = f"https://api.github.com/repos/{REPO}"
 
 

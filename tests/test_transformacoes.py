@@ -15,7 +15,7 @@ def test_remove_pedidos_cancelados():
 
 
 def test_remove_pedidos_estornados():
-    # teste nascido do postmortem docs/postmortems/2026-11-estornado.md
+    # teste nascido do faturamento que chegou errado na reunião
     pedidos = [{"quantidade": 1, "preco_unitario": 89.9, "status": "estornado"}]
     assert calcular_valor_total(pedidos) == []
 
