@@ -76,7 +76,7 @@ dbt build
 python scripts/faturamento.py
 ```
 
-Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 63,10 em 4 pedidos`. O número do relatório bate com o do financeiro.
+Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número do relatório bate com o do financeiro.
 
 **3. Trazer o README final.**
 

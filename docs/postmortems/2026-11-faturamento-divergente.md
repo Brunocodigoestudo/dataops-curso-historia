@@ -3,8 +3,8 @@
 Formato blameless: o foco é o sistema que permitiu o erro, não a pessoa.
 
 ## O que aconteceu
-Na reunião de resultados, o relatório mostrou R$ 153,00 de faturamento em
-outubro. O financeiro tinha fechado R$ 63,10. O pipeline rodou sem erro, e
+Na reunião de resultados, o relatório mostrou R$ 333.739,80 de faturamento em
+outubro. O financeiro tinha fechado R$ 315.488,80. O pipeline rodou sem erro, e
 ninguém soube explicar de onde veio a diferença.
 
 ## Linha do tempo
