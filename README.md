@@ -1,12 +1,18 @@
-# dataops-curso
+# dataops-curso-historia
 
 Projeto prático do curso **Engenharia de Dados: DataOps, CI/CD e Liderança Técnica** (Alura), com Bruno Corrêa.
 
 Ao longo das aulas, um pipeline de dados de uma loja (pedidos, clientes e produtos) sai do nível 1 de maturidade, com scripts que funcionam mas sem testes nem automação, e chega a um projeto com testes, CI/CD, padrões de código e métricas.
 
+## O caso
+
+Na reunião de resultados, o relatório mostrou um faturamento de outubro diferente do que o financeiro fechou, e ninguém soube explicar de onde veio o número. Você é o engenheiro de dados da loja: ao longo das aulas, vai investigar o erro, corrigir e garantir que ele não volte.
+
 ## Comandos da Aula 3 · CI/CD para pipelines de dados
 
 Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. A partir daqui, toda mudança vai por branch e pull request.
+
+O faturamento foi corrigido na Aula 2, mas nada impede que alguém traga a regra antiga de volta sem rodar os testes. Nesta aula, o GitHub passa a rodar os testes sozinho e a barrar esse erro antes da produção.
 
 Antes de começar: para rodar o CI e mexer nas configurações, você precisa de uma cópia do repositório na sua conta. Clique em **Fork**, desmarque **Copy the main branch only** (para vir com todas as branches) e, na aba **Actions** da sua cópia, habilite os workflows.
 
@@ -34,14 +40,15 @@ git push -u origin ci/primeiro-workflow
 
 **3. Abrir o pull request.** No GitHub, clique em **Compare & pull request → Create pull request** e espere o check `qualidade` ficar verde.
 
-**4. Ver o CI ficar vermelho, de propósito.** Em `src/transformacoes.py`, tire o `round`, como na Aula 2, salve e rode:
+**4. Ver o CI ficar vermelho, de propósito.** O primeiro comando traz de volta a regra antiga do faturamento, da Aula 1, a que gerou o número errado da reunião. Os outros enviam a mudança.
 
 ```bash
-git commit -am "test: demonstra o ci vermelho"
+git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
+git commit -am "test: regra antiga do faturamento de volta"
 git push
 ```
 
-Resultado esperado: o check fica vermelho no pull request.
+Resultado esperado: o check fica vermelho no pull request. No log, o step **Build e testes do dbt** mostra o `FAIL` do unit test `valor_total_ignora_estornados`. O erro da reunião foi barrado antes da produção.
 
 **5. Desfazer.** O `git revert` cria um commit que desfaz o anterior.
 
@@ -75,7 +82,7 @@ code .github/workflows/cd.yml
 EXEMPLO_SECRET=teste bash scripts/deploy.sh staging
 ```
 
-Resultado esperado: `PASS=11` e `Deploy em staging concluído`.
+Resultado esperado: `PASS=12` e `Deploy em staging concluído`.
 
 **4. Enviar para o GitHub.**
 
@@ -110,9 +117,10 @@ git pull
 git switch -c teste/ci-vermelho
 ```
 
-**3. Quebrar de propósito e enviar.** Em `src/transformacoes.py`, tire o `round`, salve e rode:
+**3. Quebrar de propósito e enviar.** Traz de novo a regra antiga do faturamento e envia a branch.
 
 ```bash
+git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
 git commit -am "test: merge bloqueado"
 git push -u origin teste/ci-vermelho
 ```
@@ -157,21 +165,22 @@ Cada branch guarda o estado do projeto **ao final** da aula. Para acompanhar uma
 
 | Branch | Estado do projeto |
 | --- | --- |
-| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI |
-| `aula-02-testes` | Testes com pytest, testes de dados do dbt e cobertura |
-| `aula-03-ci-cd` | CI em todo pull request e deploy em staging e production com aprovação |
-| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e primeiro ADR |
-| `aula-05-lideranca` | Documentação dos modelos e runbook de incidentes |
-| `aula-06-metricas` | Postmortem, teste novo a partir do incidente e métricas DORA |
+| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI. O faturamento chega errado na reunião |
+| `aula-02-testes` | Testes com pytest, testes de dados do dbt, cobertura e a correção do faturamento |
+| `aula-03-ci-cd` | CI em todo pull request barrando a regra antiga e deploy em staging e production com aprovação |
+| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e ADRs, incluindo a regra do faturamento |
+| `aula-05-lideranca` | Documentação dos modelos e runbook de incidente de dados |
+| `aula-06-metricas` | Postmortem do faturamento divergente e métricas DORA |
 
 ## Estrutura
 
 ```text
-dataops-curso/
+dataops-curso-historia/
 ├── .devcontainer/     ambiente do Codespaces
 ├── data/              CSVs de origem
 ├── src/               ingestão e transformações em Python
 ├── models/            modelos dbt (staging e marts)
+├── scripts/           faturamento, consultas e deploy
 ├── dbt_project.yml
 ├── profiles.yml
 └── requirements.txt
