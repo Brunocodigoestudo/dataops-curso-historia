@@ -1,12 +1,18 @@
-# dataops-curso
+# dataops-curso-historia
 
 Projeto prático do curso **Engenharia de Dados: DataOps, CI/CD e Liderança Técnica** (Alura), com Bruno Corrêa.
 
 Ao longo das aulas, um pipeline de dados de uma loja (pedidos, clientes e produtos) sai do nível 1 de maturidade, com scripts que funcionam mas sem testes nem automação, e chega a um projeto com testes, CI/CD, padrões de código e métricas.
 
+## O caso
+
+Na reunião de resultados, o relatório mostrou um faturamento de outubro diferente do que o financeiro fechou, e ninguém soube explicar de onde veio o número. Você é o engenheiro de dados da loja: ao longo das aulas, vai investigar o erro, corrigir e garantir que ele não volte.
+
 ## Comandos da Aula 5 · Mentoria e liderança técnica
 
 Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado.
+
+O caminho que você seguiu na Aula 1 para achar o erro do faturamento estava só na sua cabeça. Nesta aula, ele vira documentação e um runbook, para que qualquer pessoa do time saiba agir quando um número chegar errado.
 
 O vídeo 5.1 é só de slides, sem comandos.
 
@@ -35,7 +41,7 @@ code models/marts/_marts.yml
 dbt build
 ```
 
-Resultado esperado: `PASS=11`.
+Resultado esperado: `PASS=12`.
 
 ### 5.3 · Knowledge sharing
 
@@ -46,20 +52,20 @@ dbt docs generate
 dbt docs serve --no-browser
 ```
 
-Clique em **Open in Browser** no aviso da porta 8080. Veja a descrição do `fct_pedidos` e o grafo de linhagem (botão azul no canto inferior direito). Para parar, volte ao terminal e aperte **Ctrl+C**.
+Clique em **Open in Browser** no aviso da porta 8080. Veja a descrição do `fct_pedidos` e o grafo de linhagem (botão azul no canto inferior direito): é o caminho do faturamento, do CSV até o relatório. Para parar, volte ao terminal e aperte **Ctrl+C**.
 
-**2. Trazer o runbook e o README.**
+**2. Trazer o runbook e o README.** O passo 1 do runbook é a investigação da Aula 1: o número, os arquivos, o banco, a regra e os testes.
 
 ```bash
-git checkout origin/aula-05-lideranca -- docs/runbooks/pipeline-falhou.md README.md
-code docs/runbooks/pipeline-falhou.md
+git checkout origin/aula-05-lideranca -- docs/runbooks/incidente-de-dados.md README.md
+code docs/runbooks/incidente-de-dados.md
 ```
 
 **3. Enviar para o GitHub.**
 
 ```bash
 git add .
-git commit -m "docs: documentacao dos modelos e runbook de incidentes"
+git commit -m "docs: documentacao dos modelos e runbook de incidente de dados"
 git push -u origin docs/documentacao
 ```
 
@@ -93,7 +99,7 @@ dbt run                  # constrói os modelos
 ## Documentação do time
 
 - **Modelos e linhagem:** `dbt docs generate` e depois `dbt docs serve --no-browser`. No codespace, abra a porta 8080.
-- **Quando o pipeline falhar:** [docs/runbooks/pipeline-falhou.md](docs/runbooks/pipeline-falhou.md).
+- **Quando um número chegar errado ou o pipeline falhar:** [docs/runbooks/incidente-de-dados.md](docs/runbooks/incidente-de-dados.md).
 - **Decisões técnicas:** [docs/adr/](docs/adr/).
 
 ## Uma branch por aula
@@ -102,21 +108,22 @@ Cada branch guarda o estado do projeto **ao final** da aula. Para acompanhar uma
 
 | Branch | Estado do projeto |
 | --- | --- |
-| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI |
-| `aula-02-testes` | Testes com pytest, testes de dados do dbt e cobertura |
-| `aula-03-ci-cd` | CI em todo pull request e deploy em staging e production com aprovação |
-| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e primeiro ADR |
-| `aula-05-lideranca` | Documentação dos modelos e runbook de incidentes |
-| `aula-06-metricas` | Postmortem, teste novo a partir do incidente e métricas DORA |
+| `aula-01-inicio` | Scripts funcionando, sem testes e sem CI. O faturamento chega errado na reunião |
+| `aula-02-testes` | Testes com pytest, testes de dados do dbt, cobertura e a correção do faturamento |
+| `aula-03-ci-cd` | CI em todo pull request barrando a regra antiga e deploy em staging e production com aprovação |
+| `aula-04-padroes` | pre-commit, template de pull request, CODEOWNERS e ADRs, incluindo a regra do faturamento |
+| `aula-05-lideranca` | Documentação dos modelos e runbook de incidente de dados |
+| `aula-06-metricas` | Postmortem do faturamento divergente e métricas DORA |
 
 ## Estrutura
 
 ```text
-dataops-curso/
+dataops-curso-historia/
 ├── .devcontainer/     ambiente do Codespaces
 ├── data/              CSVs de origem
 ├── src/               ingestão e transformações em Python
 ├── models/            modelos dbt (staging e marts)
+├── scripts/           faturamento, consultas e deploy
 ├── docs/              documentação do time
 ├── dbt_project.yml
 ├── profiles.yml
