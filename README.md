@@ -51,21 +51,22 @@ dbt run
 python scripts/faturamento.py
 ```
 
-Resultado esperado: `3`, `3` e `6` linhas carregadas, `PASS=3` no dbt e `Faturamento de outubro: R$ 153,00 em 5 pedidos`. O pipeline roda sem erro, mas o financeiro fechou `R$ 63,10`.
+Resultado esperado: `1000` clientes, `1000` produtos e `3000` pedidos carregados, `PASS=3` no dbt e `Faturamento de outubro: R$ 333.739,80 em 2546 pedidos`. O pipeline roda sem erro, mas o financeiro fechou `R$ 315.488,80`.
 
-**2. Olhar os arquivos.** O que chegou da origem: seis pedidos. Repare no status do pedido 6.
+**2. Olhar os arquivos.** O que chegou da origem: 3 mil pedidos de outubro. Não dá para conferir no olho, por isso o próximo passo é perguntar ao banco.
 
 ```bash
 code data/pedidos.csv
 ```
 
-**3. Olhar o banco.** Conta os pedidos de cada status na camada `raw`, do jeito que chegaram.
+**3. Olhar o banco.** O primeiro comando conta os pedidos de cada status na camada `raw`, do jeito que chegaram. O segundo mostra desde quando chega o status novo.
 
 ```bash
 python scripts/consultar.py "select status, count(*) as pedidos from raw.pedidos group by status order by status"
+python scripts/consultar.py "select min(criado_em) as primeiro_estorno from raw.pedidos where status = 'estornado'"
 ```
 
-Resultado esperado: aberto 1, cancelado 1, estornado 1 e pago 3. Os seis pedidos chegaram inteiros, então o problema não está na ingestão. Existe um status que ninguém conhecia: `estornado`.
+Resultado esperado: aberto 328, cancelado 454, estornado 135 e pago 2083, somando os 3000 pedidos. O dado chegou inteiro, então o problema não está na ingestão. Existe um status que ninguém conhecia, `estornado`, e ele começou a chegar em `2026-10-20` sem ninguém avisar.
 
 **4. Seguir o caminho do dado.** A ingestão lê cada CSV e grava na camada `raw`. O staging padroniza: converte a data e deixa o status em minúsculo.
 
@@ -80,13 +81,13 @@ code models/staging/stg_pedidos.sql
 code models/marts/fct_pedidos.sql
 ```
 
-**6. Confirmar a suspeita.** Mostra os pedidos que entraram no faturamento.
+**6. Confirmar a suspeita.** Soma o valor dos pedidos de cada status.
 
 ```bash
-python scripts/consultar.py "select id_pedido, valor_total from main.fct_pedidos order by id_pedido"
+python scripts/consultar.py "select status, count(*) as pedidos, round(sum(quantidade * preco_unitario), 2) as valor from main.stg_pedidos group by status order by status"
 ```
 
-Resultado esperado: o pedido 6, de `89.9`, está no faturamento. É exatamente a diferença entre `R$ 153,00` e `R$ 63,10`: um dinheiro que voltou para o cliente foi somado.
+Resultado esperado: os estornados somam `18251.0`. É exatamente a diferença entre `R$ 333.739,80` e `R$ 315.488,80`: dinheiro que voltou para o cliente foi somado no faturamento.
 
 **7. Olhar os testes.** Procura a pasta de testes do projeto.
 
