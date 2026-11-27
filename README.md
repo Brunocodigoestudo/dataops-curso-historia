@@ -102,12 +102,12 @@ dbt build
 python scripts/faturamento.py
 ```
 
-Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 63,10 em 4 pedidos`. O número agora bate com o financeiro.
+Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número agora bate com o financeiro.
 
 **4. Chegar um status novo, de propósito.** Acrescenta um pedido com o status `devolvido`, que a loja ainda não conhece, carrega de novo e roda o build.
 
 ```bash
-echo "7,1,10,1,12.50,devolvido,2026-10-06" >> data/pedidos.csv
+echo "3001,1,1,1,5.90,devolvido,2026-10-31" >> data/pedidos.csv
 python -m src.ingestao
 dbt build
 ```
