@@ -1,8 +1,7 @@
 name: CI do pipeline
 
 on:
-  pull_request:
-    branches: [main]
+  pull_request:                  # roda em todo pull request
   workflow_call:                 # permite que o cd.yml reaproveite este workflow
 
 jobs:
