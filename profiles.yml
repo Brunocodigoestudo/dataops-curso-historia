@@ -1,15 +1,16 @@
+# profiles.yml: diz ao dbt onde fica o banco de cada ambiente.
 dataops_curso:
-  target: dev
+  target: dev                    # ambiente padrão: o seu Codespace
   outputs:
-    dev:
+    dev:                         # desenvolvimento, no Codespace
       type: duckdb
       path: dataops.duckdb
-    ci:
+    ci:                          # o banco do CI, criado do zero em cada pull request
       type: duckdb
       path: ci.duckdb
-    staging:
+    staging:                     # o ensaio antes da produção
       type: duckdb
       path: staging.duckdb
-    production:
+    production:                  # a produção, que a diretoria usa
       type: duckdb
       path: production.duckdb

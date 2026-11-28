@@ -1,14 +1,18 @@
+# Workflow de deploy: testa, publica no staging, espera aprovação e publica na produção.
 name: Deploy do pipeline
 
+# on: quando o deploy roda.
 on:
   push:
     branches: [main]             # merge na main dispara o deploy
   workflow_dispatch:             # botão "Run workflow" na aba Actions
 
 jobs:
+  # 1. Testes: reaproveita o ci.yml inteiro.
   testes:
     uses: ./.github/workflows/ci.yml
 
+  # 2. Staging: o ensaio. Só começa se os testes passaram (needs).
   deploy-staging:
     needs: testes
     runs-on: ubuntu-latest
@@ -22,8 +26,9 @@ jobs:
       - run: pip install -r requirements.txt
       - run: bash scripts/deploy.sh staging
         env:
-          EXEMPLO_SECRET: ${{ secrets.EXEMPLO_SECRET }}
+          EXEMPLO_SECRET: ${{ secrets.EXEMPLO_SECRET }}   # vem do cofre do GitHub
 
+  # 3. Produção: só começa depois do staging e da aprovação de uma pessoa.
   deploy-producao:
     needs: deploy-staging
     runs-on: ubuntu-latest
@@ -37,4 +42,4 @@ jobs:
       - run: pip install -r requirements.txt
       - run: bash scripts/deploy.sh production
         env:
-          EXEMPLO_SECRET: ${{ secrets.EXEMPLO_SECRET }}
+          EXEMPLO_SECRET: ${{ secrets.EXEMPLO_SECRET }}   # vem do cofre do GitHub
