@@ -48,7 +48,7 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-Resultado esperado: na primeira vez ele instala as ferramentas (alguns minutos), e o `ruff format` mostra `Failed` com `4 files reformatted`.
+Resultado esperado: na primeira vez ele instala as ferramentas (alguns minutos), e o `ruff format` mostra `Failed` com `3 files reformatted`.
 
 **3. Ver o que ele arrumou.**
 
