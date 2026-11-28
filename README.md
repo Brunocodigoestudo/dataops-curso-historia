@@ -10,26 +10,38 @@ Na reunião de resultados, o relatório mostrou um faturamento de outubro difere
 
 ## Comandos da Aula 2 · Testes automatizados
 
-Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Você começa da branch `aula-01-inicio` e traz os arquivos desta branch com `git checkout`. Na Aula 2 você trabalha direto na `main`.
+Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-02-testes`, que já tem a regra corrigida e os testes prontos. Para mostrar o erro, você traz de volta, de propósito, a regra antiga da Aula 1.
 
-Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhum teste avisou. Agora os testes provam o erro, a regra é corrigida e o projeto passa a barrar status desconhecidos antes do relatório.
+Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhum teste avisou. Agora os testes provam o erro e mostram a correção.
+
+### Antes de começar · entrar na branch da aula
+
+**1. Trocar para a branch da Aula 2.** Se você está no Codespace da Aula 1, troque de branch. Se preferir, abra um Codespace novo direto na branch `aula-02-testes`.
+
+```bash
+git switch aula-02-testes
+```
+
+Resultado esperado: `Switched to a new branch 'aula-02-testes'` (ou `Switched to branch`). Se aparecer um erro dizendo que arquivos seriam sobrescritos, rode `git reset --hard` e tente de novo: ele descarta as mudanças que ficaram da aula anterior.
+
+**2. Carregar os dados no banco.**
+
+```bash
+python -m src.ingestao
+```
+
+Resultado esperado: `1000`, `1000` e `3000` linhas carregadas.
 
 ### 2.1 · A pirâmide de testes · prática 1 de 2
 
-**1. Trazer a regra de negócio e os testes em Python.** Copia de uma vez os arquivos de Python e de testes da branch `aula-02-testes` para o seu projeto.
-
-```bash
-git checkout origin/aula-02-testes -- src/transformacoes.py src/pipeline.py tests/__init__.py tests/test_transformacoes.py tests/test_integracao.py tests/test_ingestao.py
-```
-
-**2. Ler a regra e o teste do estorno.** A regra é uma função pura: recebe uma lista de pedidos e devolve só os que entram no faturamento. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
+**1. Ler a regra e o teste do estorno.** A regra é uma função pura: recebe uma lista de pedidos e devolve só os que entram no faturamento. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
 
 ```bash
 code src/transformacoes.py
 code tests/test_transformacoes.py
 ```
 
-**3. Rodar os testes.** O `pytest` procura os testes da pasta `tests/` e roda um por um. O `-v` mostra o nome de cada teste.
+**2. Rodar os testes.** O `pytest` procura os testes da pasta `tests/` e roda um por um. O `-v` mostra o nome de cada teste.
 
 ```bash
 pytest -v
@@ -37,7 +49,7 @@ pytest -v
 
 Resultado esperado: `9 passed`.
 
-**4. Ver o teste pegar o erro da reunião, de propósito.** Em `src/transformacoes.py`, troque `not in ("cancelado", "estornado")` por `!= "cancelado"`, que é a regra antiga da Aula 1. Salve e rode:
+**3. Ver o teste pegar o erro da reunião, de propósito.** Em `src/transformacoes.py`, troque `not in ("cancelado", "estornado")` por `!= "cancelado"`, que é a regra antiga da Aula 1. Salve e rode:
 
 ```bash
 pytest -v
@@ -56,54 +68,34 @@ python -m src.ingestao
 
 Resultado esperado: `raw.pedidos: 3000 linhas` nas duas vezes. Nada duplicou.
 
-**2. Conferir o faturamento.** Remonta as tabelas e mostra o número do relatório.
-
-```bash
-dbt run
-python scripts/faturamento.py
-```
-
-Resultado esperado: `PASS=3` e `Faturamento de outubro: R$ 333.739,80 em 2546 pedidos`, o mesmo número da Aula 1. Rodar de novo não dobrou o faturamento. O número ainda está errado porque a correção vem no próximo vídeo.
-
 ### 2.3 · Testando dados com dbt · prática 2 de 2
 
-**1. Trazer os testes de dados.** Testes do staging, unit tests do mart e o teste singular. A regra do `fct_pedidos` ainda é a antiga, a mesma que gerou o número errado.
+**1. Ler os testes de dados.** No `_staging.yml`, o `accepted_values` lista os status que a loja conhece. No `_marts.yml`, o unit test `valor_total_ignora_estornados` diz o que o faturamento deveria fazer com um estorno.
 
 ```bash
-git checkout origin/aula-02-testes -- models/staging/_staging.yml models/marts/_marts.yml tests/assert_valor_total_positivo.sql
 code models/staging/_staging.yml
 code models/marts/_marts.yml
 ```
 
-No `_staging.yml`, o `accepted_values` lista os status que a loja conhece. No `_marts.yml`, o unit test `valor_total_ignora_estornados` diz o que o faturamento deveria fazer com um estorno.
-
-**2. Rodar modelos e testes juntos.** O primeiro comando carrega os CSVs. O `dbt build` roda os modelos e os testes na ordem do grafo.
+**2. Trazer de volta a regra antiga, a da reunião.** O primeiro comando copia o `fct_pedidos` da Aula 1, que só tira os cancelados. O segundo roda os modelos e os testes na ordem do grafo.
 
 ```bash
-python -m src.ingestao
+git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
 dbt build
 ```
 
-Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados`, `ERROR=1` e `SKIP=3`. O teste reproduziu o erro da reunião: o pedido estornado apareceu no resultado, somado ao faturamento.
+Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados` e `ERROR=1`. O teste pegou o erro da reunião: o pedido estornado entrou no faturamento.
 
-**3. Corrigir a regra e conferir o faturamento.** Traz o `fct_pedidos` corrigido: cancelados e estornados ficam fora do faturamento.
+**3. Voltar a regra corrigida e conferir o faturamento.** O primeiro comando devolve o `fct_pedidos` desta branch, que tira cancelados e estornados.
 
 ```bash
-git checkout origin/aula-02-testes -- models/marts/fct_pedidos.sql
+git checkout HEAD -- models/marts/fct_pedidos.sql
 code models/marts/fct_pedidos.sql
 dbt build
 python scripts/faturamento.py
 ```
 
 Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número agora bate com o financeiro.
-
-**4. Salvar a aula no Git.** Prepara os arquivos, registra o commit e envia para o GitHub.
-
-```bash
-git add .
-git commit -m "fix: estornado fora do faturamento, com testes"
-git push
-```
 
 ### 2.4 · Cobertura de testes
 
