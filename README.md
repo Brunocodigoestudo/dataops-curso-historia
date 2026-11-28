@@ -10,7 +10,7 @@ Na reunião de resultados, o relatório mostrou um faturamento de outubro difere
 
 ## Comandos da Aula 2 · Testes automatizados
 
-Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-02-testes`. Ela começa do jeito que estava no dia da reunião: a regra do faturamento ainda soma os estornos, e os testes já estão escritos. Os testes vão mostrar o erro, você corrige uma linha e os testes confirmam a correção.
+Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-02-testes`. Ela começa do jeito que estava no dia da reunião: a regra do faturamento ainda soma os estornos e não existe nenhum teste. Você cria os testes, eles mostram o erro, você corrige uma linha e os testes confirmam a correção.
 
 ### Antes de começar · entrar na branch e ver o número errado
 
@@ -34,28 +34,83 @@ Resultado esperado: `1000`, `1000` e `3000` linhas carregadas, `PASS=3` e `Fatur
 
 ### 2.1 · A pirâmide de testes · prática 1 de 2
 
-**1. Ler a regra e o teste do estorno.** A regra recebe uma lista de pedidos e devolve só os que entram no faturamento. Repare que ela só tira os cancelados. O `test_remove_pedidos_estornados` diz o que deveria acontecer com um estorno.
+**1. Ler a regra do faturamento em Python.** A função recebe uma lista de pedidos e devolve só os que entram no faturamento. Repare que ela só tira os cancelados.
 
 ```bash
 code src/transformacoes.py
+```
+
+**2. Criar a pasta de testes.** O `mkdir` cria a pasta `tests`. O `touch` cria o arquivo vazio `__init__.py`, que avisa o Python que a pasta faz parte do projeto.
+
+```bash
+mkdir -p tests
+touch tests/__init__.py
+```
+
+**3. Criar o arquivo de testes.** O comando abre um arquivo novo no editor. Cole o código abaixo, já comentado, e salve com **Ctrl+S**.
+
+```bash
 code tests/test_transformacoes.py
 ```
 
-**2. Rodar os testes.** O `pytest` procura os testes da pasta `tests/` e roda um por um. O `-v` mostra o nome de cada teste.
+```python
+# Testes da regra de faturamento (src/transformacoes.py).
+# Cada teste monta pedidos de exemplo, passa pela regra
+# e confere se o resultado é o esperado.
+
+from src.transformacoes import calcular_valor_total
+
+
+def test_calcula_valor_total():
+    # Um pedido pago: 2 unidades de R$ 10,50.
+    pedidos = [{"quantidade": 2, "preco_unitario": 10.5, "status": "pago"}]
+    resultado = calcular_valor_total(pedidos)
+    # O valor total tem que ser quantidade x preço: R$ 21,00.
+    assert resultado[0]["valor_total"] == 21.0
+
+
+def test_remove_pedidos_cancelados():
+    # Pedido cancelado não é venda: não pode entrar no faturamento.
+    pedidos = [{"quantidade": 1, "preco_unitario": 5, "status": "cancelado"}]
+    # A lista vazia mostra que a regra tirou o pedido.
+    assert calcular_valor_total(pedidos) == []
+
+
+def test_remove_pedidos_estornados():
+    # O ERRO DA REUNIÃO: o estorno é dinheiro que voltou para o cliente.
+    # A regra antiga somava o estorno, e o faturamento foi para mais.
+    # Este teste garante que o erro não volta.
+    pedidos = [{"quantidade": 1, "preco_unitario": 89.9, "status": "estornado"}]
+    assert calcular_valor_total(pedidos) == []
+```
+
+**4. Rodar os testes.** O `pytest` procura os testes da pasta `tests/` e roda um por um. O `-v` mostra o nome de cada teste.
 
 ```bash
 pytest -v
 ```
 
-Resultado esperado: `1 failed, 5 passed`. O teste que falhou é o `test_remove_pedidos_estornados`: o teste provou o erro da reunião.
+Resultado esperado: `1 failed, 2 passed`. O teste que falhou é o `test_remove_pedidos_estornados`: o teste provou o erro da reunião.
 
-**3. Corrigir a regra.** Em `src/transformacoes.py`, troque `!= "cancelado"` por `not in ("cancelado", "estornado")`, salve e rode os testes de novo.
+**5. Corrigir a regra.** Em `src/transformacoes.py`, troque a linha
+
+```python
+        if p["status"] != "cancelado"
+```
+
+por
+
+```python
+        if p["status"] not in ("cancelado", "estornado")
+```
+
+Salve e rode os testes de novo.
 
 ```bash
 pytest -v
 ```
 
-Resultado esperado: `6 passed`. A regra foi corrigida, e o teste confirma.
+Resultado esperado: `3 passed`. A regra foi corrigida, e o teste confirma.
 
 ### 2.2 · Integração e idempotência · prática-relâmpago
 
@@ -70,14 +125,73 @@ Resultado esperado: `raw.pedidos: 3000 linhas` nas duas vezes. Nada duplicou.
 
 ### 2.3 · Testando dados com dbt · prática 2 de 2
 
-**1. Ler os testes de dados.** No `_staging.yml`, o `accepted_values` lista os status que a loja conhece. No `_marts.yml`, o unit test `valor_total_ignora_estornados` diz o que o faturamento deveria fazer com um estorno.
+**1. Criar o teste da regra do faturamento no dbt.** Abre um arquivo novo. Cole o código abaixo e salve com **Ctrl+S**. Cada unit test inventa alguns pedidos e confere o que o `fct_pedidos` devolve.
 
 ```bash
-code models/staging/_staging.yml
 code models/marts/_marts.yml
 ```
 
-**2. Rodar modelos e testes juntos.** O `dbt build` roda os modelos e os testes na ordem do grafo.
+```yaml
+# Testes da regra do faturamento no dbt (unit tests).
+# Cada teste inventa alguns pedidos, roda o fct_pedidos com eles
+# e confere se o resultado é o esperado.
+version: 2
+
+unit_tests:
+  # Pedido cancelado não é venda: só o pedido pago pode aparecer.
+  - name: valor_total_ignora_cancelados
+    model: fct_pedidos
+    given:
+      - input: ref('stg_pedidos')
+        rows:
+          - {id_pedido: 1, quantidade: 2, preco_unitario: 10.0, status: 'pago'}
+          - {id_pedido: 2, quantidade: 1, preco_unitario: 5.0, status: 'cancelado'}
+    expect:
+      rows:
+        - {id_pedido: 1, valor_total: 20.0}
+
+  # O ERRO DA REUNIÃO: o estorno é dinheiro que voltou para o cliente.
+  # Só o pedido pago pode aparecer no faturamento.
+  - name: valor_total_ignora_estornados
+    model: fct_pedidos
+    given:
+      - input: ref('stg_pedidos')
+        rows:
+          - {id_pedido: 1, quantidade: 2, preco_unitario: 10.0, status: 'pago'}
+          - {id_pedido: 6, quantidade: 1, preco_unitario: 89.9, status: 'estornado'}
+    expect:
+      rows:
+        - {id_pedido: 1, valor_total: 20.0}
+```
+
+**2. Criar o teste do dado real.** Abre outro arquivo novo. Cole o código abaixo e salve com **Ctrl+S**. Ele confere os pedidos que chegaram: sem repetidos, sem vazios e só com os status que a loja conhece.
+
+```bash
+code models/staging/_staging.yml
+```
+
+```yaml
+# Testes do dado real (data tests): conferem os pedidos que chegaram
+# toda vez que o pipeline roda.
+version: 2
+
+models:
+  - name: stg_pedidos
+    columns:
+      # Cada pedido aparece uma vez só e nunca fica vazio.
+      - name: id_pedido
+        data_tests:
+          - unique
+          - not_null
+      # O porteiro: só entram os status que a loja conhece.
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['aberto', 'pago', 'cancelado', 'estornado']
+```
+
+**3. Rodar modelos e testes juntos.** O `dbt build` roda os modelos e os testes na ordem certa.
 
 ```bash
 dbt build
@@ -85,18 +199,32 @@ dbt build
 
 Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados` e `ERROR=1`. O teste pegou o erro da reunião: o pedido estornado entrou no faturamento.
 
-**3. Corrigir a regra do faturamento.** Abra o `fct_pedidos.sql`, troque `where status != 'cancelado'` por `where status not in ('cancelado', 'estornado')`, salve e rode de novo.
+**4. Corrigir a regra do faturamento no dbt.** Abra o `fct_pedidos.sql`:
 
 ```bash
 code models/marts/fct_pedidos.sql
 ```
+
+Troque a linha
+
+```sql
+where status != 'cancelado'
+```
+
+por
+
+```sql
+where status not in ('cancelado', 'estornado')
+```
+
+Salve e rode de novo:
 
 ```bash
 dbt build
 python scripts/faturamento.py
 ```
 
-Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número agora bate com o financeiro.
+Resultado esperado: `PASS=8` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número agora bate com o financeiro.
 
 ### 2.4 · Cobertura de testes
 
