@@ -14,15 +14,15 @@ Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco)
 
 Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhum teste avisou. Agora os testes provam o erro, a regra é corrigida e o projeto passa a barrar status desconhecidos antes do relatório.
 
-### 2.1 · A pirâmide de testes
+### 2.1 · A pirâmide de testes · prática 1 de 2
 
-**1. Trazer a regra de negócio e os testes unitários.** Copia só estes arquivos da branch `aula-02-testes` para o seu projeto.
+**1. Trazer a regra de negócio e os testes em Python.** Copia de uma vez os arquivos de Python e de testes da branch `aula-02-testes` para o seu projeto.
 
 ```bash
-git checkout origin/aula-02-testes -- src/transformacoes.py tests/__init__.py tests/test_transformacoes.py
+git checkout origin/aula-02-testes -- src/transformacoes.py src/pipeline.py tests/__init__.py tests/test_transformacoes.py tests/test_integracao.py tests/test_ingestao.py
 ```
 
-**2. Ler a regra e os testes.** A regra é uma função pura: recebe uma lista e devolve uma lista. São quatro testes, e o `parametrize` roda o mesmo teste com vários cenários. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
+**2. Ler a regra e o teste do estorno.** A regra é uma função pura: recebe uma lista de pedidos e devolve só os que entram no faturamento. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
 
 ```bash
 code src/transformacoes.py
@@ -35,43 +35,21 @@ code tests/test_transformacoes.py
 pytest -v
 ```
 
-Resultado esperado: `6 passed`.
+Resultado esperado: `9 passed`.
 
-**4. Ver o teste falhar, de propósito.** Em `src/transformacoes.py`, troque `round(p["quantidade"] * p["preco_unitario"], 2)` por `p["quantidade"] * p["preco_unitario"]`, salve e rode:
+**4. Ver o teste pegar o erro da reunião, de propósito.** Em `src/transformacoes.py`, troque `not in ("cancelado", "estornado")` por `!= "cancelado"`, que é a regra antiga da Aula 1. Salve e rode:
 
 ```bash
 pytest -v
 ```
 
-Resultado esperado: `1 failed`, com o valor `0.30000000000000004`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `6 passed`.
+Resultado esperado: `1 failed`, no `test_remove_pedidos_estornados`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `9 passed`.
 
 ### 2.2 · Integração e idempotência
 
-**1. Trazer o pipeline e o teste de integração.** O pipeline lê do banco, aplica a regra e grava o resultado.
+O vídeo 2.2 é só de slides, sem comandos.
 
-```bash
-git checkout origin/aula-02-testes -- src/pipeline.py tests/test_integracao.py
-code src/pipeline.py
-code tests/test_integracao.py
-```
-
-**2. Rodar os testes.** A fixture cria um DuckDB em memória: um banco real, mas descartável.
-
-```bash
-pytest -v
-```
-
-Resultado esperado: `8 passed`.
-
-**3. Ver a idempotência quebrar, de propósito.** Em `src/pipeline.py`, troque `CREATE OR REPLACE TABLE` por `CREATE TABLE IF NOT EXISTS`, salve e rode:
-
-```bash
-pytest -v
-```
-
-Resultado esperado: `1 failed`, com `assert 2 == 1`. O pedido apareceu duas vezes. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `8 passed`.
-
-### 2.3 · Testando dados com dbt
+### 2.3 · Testando dados com dbt · prática 2 de 2
 
 **1. Trazer os testes de dados.** Testes do staging, unit tests do mart e o teste singular. A regra do `fct_pedidos` ainda é a antiga, a mesma que gerou o número errado.
 
@@ -79,7 +57,6 @@ Resultado esperado: `1 failed`, com `assert 2 == 1`. O pedido apareceu duas veze
 git checkout origin/aula-02-testes -- models/staging/_staging.yml models/marts/_marts.yml tests/assert_valor_total_positivo.sql
 code models/staging/_staging.yml
 code models/marts/_marts.yml
-code tests/assert_valor_total_positivo.sql
 ```
 
 No `_staging.yml`, o `accepted_values` lista os status que a loja conhece. No `_marts.yml`, o unit test `valor_total_ignora_estornados` diz o que o faturamento deveria fazer com um estorno.
@@ -93,7 +70,7 @@ dbt build
 
 Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados`, `ERROR=1` e `SKIP=2`. O teste reproduziu o erro da reunião: o pedido estornado apareceu no resultado, somado ao faturamento.
 
-**3. Corrigir a regra.** Traz o `fct_pedidos` corrigido: cancelados e estornados ficam fora do faturamento.
+**3. Corrigir a regra e conferir o faturamento.** Traz o `fct_pedidos` corrigido: cancelados e estornados ficam fora do faturamento.
 
 ```bash
 git checkout origin/aula-02-testes -- models/marts/fct_pedidos.sql
@@ -104,51 +81,6 @@ python scripts/faturamento.py
 
 Resultado esperado: `PASS=12` e `Faturamento de outubro: R$ 315.488,80 em 2411 pedidos`. O número agora bate com o financeiro.
 
-**4. Chegar um status novo, de propósito.** Acrescenta um pedido com o status `devolvido`, que a loja ainda não conhece, carrega de novo e roda o build.
-
-```bash
-echo "3001,1,1,1,5.90,devolvido,2026-10-31" >> data/pedidos.csv
-python -m src.ingestao
-dbt build
-```
-
-Resultado esperado: `FAIL 1` no teste `accepted_values` do status, `ERROR=1` e `SKIP=4`. O teste funciona como um porteiro: barrou o status desconhecido antes de ele chegar ao relatório. O teste não corrige o dado, ele avisa. O que fazer com o status novo é decisão do engenheiro com o negócio.
-
-**5. Desfazer.** Volta o CSV ao original, carrega de novo e roda o build.
-
-```bash
-git checkout data/pedidos.csv
-python -m src.ingestao
-dbt build
-```
-
-Resultado esperado: `PASS=12`.
-
-### 2.4 · Cobertura de testes
-
-**1. Medir a cobertura.** Mostra quais linhas os testes executaram. Abaixo de 80%, falha.
-
-```bash
-pytest --cov=src --cov-report=term-missing --cov-fail-under=80
-```
-
-Resultado esperado: `42%` e `FAIL`. A ingestão inteira está sem teste.
-
-**2. Trazer o teste que falta.** O teste da ingestão roda numa pasta temporária, sem tocar nos dados reais.
-
-```bash
-git checkout origin/aula-02-testes -- tests/test_ingestao.py
-code tests/test_ingestao.py
-```
-
-**3. Medir de novo.**
-
-```bash
-pytest --cov=src --cov-report=term-missing --cov-fail-under=80
-```
-
-Resultado esperado: `9 passed` e `96%`.
-
 **4. Salvar a aula no Git.** Prepara os arquivos, registra o commit e envia para o GitHub.
 
 ```bash
@@ -156,6 +88,10 @@ git add .
 git commit -m "fix: estornado fora do faturamento, com testes"
 git push
 ```
+
+### 2.4 · Cobertura de testes
+
+O vídeo 2.4 é só de slides, sem comandos.
 
 ## Como abrir o ambiente
 
