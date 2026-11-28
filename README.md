@@ -10,67 +10,70 @@ Na reunião de resultados, o relatório mostrou um faturamento de outubro difere
 
 ## Comandos da Aula 3 · CI/CD para pipelines de dados
 
-Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. A partir daqui, toda mudança vai por branch e pull request.
+Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-03-ci-cd`, que já tem o CI e o deploy prontos.
 
 O faturamento foi corrigido na Aula 2, mas nada impede que alguém traga a regra antiga de volta sem rodar os testes. Nesta aula, o GitHub passa a rodar os testes sozinho e a barrar esse erro antes da produção.
 
-Antes de começar: para rodar o CI e mexer nas configurações, você precisa de uma cópia do repositório na sua conta. Clique em **Fork**, desmarque **Copy the main branch only** (para vir com todas as branches) e, na aba **Actions** da sua cópia, habilite os workflows.
+Para o aluno: para rodar o CI e mexer nas configurações, você precisa de uma cópia do repositório na sua conta. Clique em **Fork**, desmarque **Copy the main branch only** (para vir com todas as branches) e, na aba **Actions** da sua cópia, habilite os workflows.
+
+### Antes de começar · entrar na branch da aula
+
+```bash
+git switch aula-03-ci-cd
+python -m src.ingestao
+```
+
+Resultado esperado: `Switched to a new branch 'aula-03-ci-cd'` e `1000`, `1000` e `3000` linhas carregadas. Se aparecer um erro dizendo que arquivos seriam sobrescritos, rode `git reset --hard` e tente de novo.
 
 O vídeo 3.1 é só de slides, sem comandos.
 
 ### 3.2 · Os blocos de um workflow
 
-**1. Criar a branch e trazer o workflow.** O `git switch -c` cria uma branch nova e já entra nela.
+**1. Ler o workflow.** Leia de cima para baixo: `on` (quando roda), `jobs` e `runs-on` (o que roda e em qual máquina), `steps` (a sequência de passos).
 
 ```bash
-git switch -c ci/primeiro-workflow
-git checkout origin/aula-03-ci-cd -- .github/workflows/ci.yml
 code .github/workflows/ci.yml
 ```
 
-Leia de cima para baixo: `on` (quando roda), `jobs` e `runs-on` (o que roda e em qual máquina), `steps` (a sequência de passos).
-
-**2. Enviar a branch para o GitHub.**
+**2. Criar uma branch de trabalho e trazer o erro da reunião, de propósito.** O `git switch -c` cria uma branch nova a partir da branch da aula. O `git checkout` traz a regra antiga do faturamento, da Aula 1.
 
 ```bash
-git add .
-git commit -m "ci: workflow de qualidade"
-git push -u origin ci/primeiro-workflow
-```
-
-**3. Abrir o pull request.** No GitHub, clique em **Compare & pull request → Create pull request** e espere o check `qualidade` ficar verde.
-
-**4. Ver o CI ficar vermelho, de propósito.** O primeiro comando traz de volta a regra antiga do faturamento, da Aula 1, a que gerou o número errado da reunião. Os outros enviam a mudança.
-
-```bash
+git switch -c ci/regra-antiga
 git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
 git commit -am "test: regra antiga do faturamento de volta"
-git push
+git push -u origin ci/regra-antiga
 ```
 
-Resultado esperado: o check fica vermelho no pull request. No log, o step **Build e testes do dbt** mostra o `FAIL` do unit test `valor_total_ignora_estornados`. O erro da reunião foi barrado antes da produção.
+**3. Abrir o pull request.** No GitHub, clique em **Compare & pull request**. Em **base**, escolha `aula-03-ci-cd` (no fork, escolha também o seu repositório em **base repository**) e clique em **Create pull request**.
 
-**5. Desfazer.** O `git revert` cria um commit que desfaz o anterior.
+Resultado esperado: o check `qualidade` fica vermelho. No log, o step **Build e testes do dbt** mostra o `FAIL` do unit test `valor_total_ignora_estornados`. O erro da reunião foi barrado antes da produção.
+
+**4. Desfazer.** O `git revert` cria um commit que desfaz o anterior.
 
 ```bash
 git revert HEAD --no-edit
 git push
 ```
 
-Resultado esperado: o check volta a ficar verde. Não faça o merge ainda.
+Resultado esperado: o check volta a ficar verde.
+
+**5. Fechar o pull request.** No GitHub, clique em **Close pull request**. No Codespace, volte para a branch da aula:
+
+```bash
+git switch aula-03-ci-cd
+```
 
 ### 3.3 · Environments, secrets e aprovação
 
-**1. Criar os ambientes e o secret no GitHub.** Em **Settings** do seu repositório:
+**1. Criar os ambientes e o secret no GitHub.** Em **Settings** do repositório:
 
 - **Environments → New environment:** `staging` → **Configure environment**.
 - **Environments → New environment:** `production` → marque **Required reviewers**, adicione o seu usuário → **Save protection rules**.
 - **Secrets and variables → Actions → New repository secret:** nome `EXEMPLO_SECRET`, valor `ensaio123`.
 
-**2. Trazer os arquivos do deploy.** Um banco por ambiente, o script de deploy e o workflow de CD.
+**2. Ler os arquivos do deploy.** Um banco por ambiente, o script de deploy e o workflow de CD.
 
 ```bash
-git checkout origin/aula-03-ci-cd -- profiles.yml scripts/deploy.sh .github/workflows/cd.yml
 code profiles.yml
 code scripts/deploy.sh
 code .github/workflows/cd.yml
@@ -84,53 +87,35 @@ EXEMPLO_SECRET=teste bash scripts/deploy.sh staging
 
 Resultado esperado: `PASS=12` e `Deploy em staging concluído`.
 
-**4. Enviar para o GitHub.**
+**4. Rodar o deploy no GitHub e aprovar a produção.** Na aba **Actions**, clique em **Deploy do pipeline → Run workflow**, escolha a branch `aula-03-ci-cd` e clique em **Run workflow**. Espere os testes e o staging ficarem verdes, clique em **Review deployments → production → Approve and deploy**.
 
-```bash
-git add .
-git commit -m "ci: deploy com aprovacao"
-git push
-```
+Resultado esperado: os três jobs verdes. No log, o secret aparece como `***`.
 
-**5. Fazer o merge e aprovar a produção.** No pull request, com o check verde: **Merge pull request → Confirm merge**. Depois vá em **Actions → Deploy do pipeline**, clique em **Review deployments → production → Approve and deploy**. No log, o secret aparece como `***`.
-
-**6. Voltar para a main atualizada.**
-
-```bash
-git switch main
-git pull
-```
-
-### 3.4 · Protegendo a main
+### 3.4 · Protegendo a branch
 
 **1. Criar a regra de proteção.** Em **Settings → Branches → Add classic branch protection rule**:
 
-- **Branch name pattern:** `main`.
+- **Branch name pattern:** `aula-03-ci-cd` (num projeto real, é a `main`).
 - Marque **Require a pull request before merging** e desmarque **Require approvals**.
 - Marque **Require status checks to pass before merging** e escolha `qualidade`.
 - Marque **Do not allow bypassing the above settings**.
 - Clique em **Create**.
 
-**2. Criar uma branch de teste.**
+**2. Quebrar de propósito e enviar.** Cria uma branch de teste com a regra antiga do faturamento.
 
 ```bash
 git switch -c teste/ci-vermelho
-```
-
-**3. Quebrar de propósito e enviar.** Traz de novo a regra antiga do faturamento e envia a branch.
-
-```bash
 git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
 git commit -am "test: merge bloqueado"
 git push -u origin teste/ci-vermelho
 ```
 
-**4. Ver o merge bloqueado.** Abra o pull request no GitHub: com o CI vermelho, o botão de merge não libera. Depois clique em **Close pull request**.
+**3. Ver o merge bloqueado.** No GitHub, abra o pull request com **base** `aula-03-ci-cd`: com o CI vermelho, o botão de merge não libera. Depois clique em **Close pull request**.
 
-**5. Limpar.** Volta para a main e apaga a branch de teste.
+**4. Limpar.** Volta para a branch da aula e apaga a branch de teste.
 
 ```bash
-git switch main
+git switch aula-03-ci-cd
 git branch -D teste/ci-vermelho
 ```
 
