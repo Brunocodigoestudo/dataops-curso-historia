@@ -45,9 +45,25 @@ pytest -v
 
 Resultado esperado: `1 failed`, no `test_remove_pedidos_estornados`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `9 passed`.
 
-### 2.2 · Integração e idempotência
+### 2.2 · Integração e idempotência · prática-relâmpago
 
-O vídeo 2.2 é só de slides, sem comandos.
+**1. Rodar a ingestão duas vezes seguidas.** Se o pipeline não fosse idempotente, a segunda vez somaria os pedidos de novo.
+
+```bash
+python -m src.ingestao
+python -m src.ingestao
+```
+
+Resultado esperado: `raw.pedidos: 3000 linhas` nas duas vezes. Nada duplicou.
+
+**2. Conferir o faturamento.** Remonta as tabelas e mostra o número do relatório.
+
+```bash
+dbt run
+python scripts/faturamento.py
+```
+
+Resultado esperado: `PASS=3` e `Faturamento de outubro: R$ 333.739,80 em 2546 pedidos`, o mesmo número da Aula 1. Rodar de novo não dobrou o faturamento. O número ainda está errado porque a correção vem no próximo vídeo.
 
 ### 2.3 · Testando dados com dbt · prática 2 de 2
 
