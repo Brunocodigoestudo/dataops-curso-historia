@@ -47,7 +47,7 @@ code tests/test_transformacoes.py
 pytest -v
 ```
 
-Resultado esperado: `9 passed`.
+Resultado esperado: `6 passed`.
 
 **3. Ver o teste pegar o erro da reunião, de propósito.** Em `src/transformacoes.py`, troque `not in ("cancelado", "estornado")` por `!= "cancelado"`, que é a regra antiga da Aula 1. Salve e rode:
 
@@ -55,7 +55,7 @@ Resultado esperado: `9 passed`.
 pytest -v
 ```
 
-Resultado esperado: `1 failed`, no `test_remove_pedidos_estornados`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `9 passed`.
+Resultado esperado: `1 failed`, no `test_remove_pedidos_estornados`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `6 passed`.
 
 ### 2.2 · Integração e idempotência · prática-relâmpago
 
