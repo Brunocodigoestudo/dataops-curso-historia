@@ -18,12 +18,15 @@ Para o aluno: para rodar o CI e mexer nas configurações, você precisa de uma 
 
 ### Antes de começar · entrar na branch da aula
 
+O primeiro comando descarta as correções feitas à mão na Aula 2, que ficaram só no seu Codespace. A branch da Aula 3 já começa com tudo corrigido.
+
 ```bash
+git reset --hard
 git switch aula-03-ci-cd
 python -m src.ingestao
 ```
 
-Resultado esperado: `Switched to a new branch 'aula-03-ci-cd'` e `1000`, `1000` e `3000` linhas carregadas. Se aparecer um erro dizendo que arquivos seriam sobrescritos, rode `git reset --hard` e tente de novo.
+Resultado esperado: `Switched to a new branch 'aula-03-ci-cd'` e `1000`, `1000` e `3000` linhas carregadas.
 
 O vídeo 3.1 é só de slides, sem comandos.
 
