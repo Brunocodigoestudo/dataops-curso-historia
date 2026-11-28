@@ -18,10 +18,11 @@ Para o aluno: para rodar o CI e mexer nas configurações, você precisa de uma 
 
 ### Antes de começar · entrar na branch da aula
 
-O primeiro comando descarta as correções feitas à mão na Aula 2, que ficaram só no seu Codespace. A branch da Aula 3 já começa com tudo corrigido.
+Na Aula 2 você criou os testes e corrigiu a regra no seu Codespace. A branch da Aula 3 já começa com tudo isso pronto. O `git reset --hard` descarta as correções feitas à mão, e o `git clean -fd` apaga os arquivos de teste criados na aula, para a troca de branch funcionar.
 
 ```bash
 git reset --hard
+git clean -fd
 git switch aula-03-ci-cd
 python -m src.ingestao
 ```
