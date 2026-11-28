@@ -21,13 +21,16 @@ Para o aluno: para rodar o CI e mexer nas configurações, você precisa de uma 
 Na Aula 2 você criou os testes e corrigiu a regra no seu Codespace. A branch da Aula 3 já começa com tudo isso pronto. O `git reset --hard` descarta as correções feitas à mão, e o `git clean -fd` apaga os arquivos de teste criados na aula, para a troca de branch funcionar.
 
 ```bash
-# git reset --hard: descarta as mudanças feitas nos arquivos e volta ao que está salvo no Git
+# git reset --hard: descarta as mudanças feitas nos arquivos
+# e volta tudo para o último commit salvo no Git
 git reset --hard
-# git clean -fd: apaga os arquivos e pastas novos que o Git ainda não conhece
+# git clean: apaga os arquivos que o Git ainda não conhece (os criados na aula).
+# O -f confirma que é para apagar e o -d inclui as pastas
 git clean -fd
 # git switch: troca para outra branch. Aqui, a branch da Aula 3
 git switch aula-03-ci-cd
-# Roda a ingestão: lê os CSVs da pasta data/ e grava no banco (camada raw)
+# Roda a ingestão: lê os CSVs da pasta data/ e grava no banco DuckDB
+# na camada raw, que guarda o dado bruto, do jeito que chegou
 python -m src.ingestao
 ```
 
@@ -40,20 +43,25 @@ O vídeo 3.1 é só de slides, sem comandos.
 **1. Ler o workflow.** Leia de cima para baixo: `on` (quando roda), `jobs` e `runs-on` (o que roda e em qual máquina), `steps` (a sequência de passos).
 
 ```bash
-# code: abre o workflow do CI, as instruções que o GitHub segue em todo pull request
+# code: abre um arquivo no editor.
+# ci.yml: o workflow do CI, as instruções que o GitHub segue em todo pull request
 code .github/workflows/ci.yml
 ```
 
 **2. Criar uma branch de trabalho e trazer o erro da reunião, de propósito.** O `git switch -c` cria uma branch nova a partir da branch da aula. O `git checkout` traz a regra antiga do faturamento, da Aula 1.
 
 ```bash
-# git switch -c: cria uma branch nova e já entra nela
+# git switch -c: cria uma branch nova e já entra nela.
+# ci/regra-antiga: o nome da branch de trabalho
 git switch -c ci/regra-antiga
-# git checkout ... --: copia um arquivo de outra branch. Aqui, a regra antiga da Aula 1
+# git checkout origem -- arquivo: copia um arquivo de outra branch para cá.
+# Aqui, o fct_pedidos.sql da Aula 1, com a regra antiga do dia da reunião
 git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
-# git commit -am: salva no Git todas as mudanças, com uma mensagem
+# git commit: salva as mudanças no Git.
+# O -a inclui todos os arquivos alterados e o -m traz a mensagem do commit
 git commit -am "test: regra antiga do faturamento de volta"
-# git push: envia a branch para o GitHub. O -u liga a branch local à do GitHub
+# git push: envia a branch para o GitHub (origin).
+# O -u liga a branch daqui à do GitHub, para os próximos push
 git push -u origin ci/regra-antiga
 ```
 
@@ -64,9 +72,10 @@ Resultado esperado: o check `qualidade` fica vermelho. No log, o step **Build e 
 **4. Desfazer.** O `git revert` cria um commit que desfaz o anterior.
 
 ```bash
-# git revert: cria um commit que desfaz o último commit (HEAD)
+# git revert: cria um commit novo que desfaz o último commit (HEAD).
+# O --no-edit usa a mensagem padrão, sem abrir o editor
 git revert HEAD --no-edit
-# git push: envia os commits para o GitHub
+# git push: envia os commits novos para o GitHub
 git push
 ```
 
@@ -90,18 +99,22 @@ git switch aula-03-ci-cd
 **2. Ler os arquivos do deploy.** Um banco por ambiente, o script de deploy e o workflow de CD.
 
 ```bash
-# Abre o profiles.yml: um banco para cada ambiente (dev, ci, staging e production)
+# profiles.yml: diz ao dbt qual banco usar em cada ambiente
+# (dev, ci, staging e production): um banco separado para cada um
 code profiles.yml
-# Abre o script de deploy: carrega os dados e roda o dbt build no ambiente escolhido
+# deploy.sh: o script de deploy. Carrega os dados e roda o dbt build
+# no banco do ambiente escolhido
 code scripts/deploy.sh
-# Abre o workflow de deploy: testes, staging, aprovação e produção
+# cd.yml: o workflow de deploy. Roda os testes, publica no staging,
+# espera a aprovação e publica na produção
 code .github/workflows/cd.yml
 ```
 
 **3. Testar o deploy no Codespace.** Roda o deploy simulado no ambiente de staging.
 
 ```bash
-# Roda o deploy no staging. O EXEMPLO_SECRET faz o papel de uma senha
+# Roda o deploy no ambiente staging. O EXEMPLO_SECRET=teste cria uma variável
+# só para este comando, fazendo o papel de uma senha guardada no GitHub
 EXEMPLO_SECRET=teste bash scripts/deploy.sh staging
 ```
 
@@ -124,11 +137,14 @@ Resultado esperado: os três jobs verdes. No log, o secret aparece como `***`.
 **2. Quebrar de propósito e enviar.** Cria uma branch de teste com a regra antiga do faturamento.
 
 ```bash
-# git switch -c: cria uma branch de teste e já entra nela
+# git switch -c: cria uma branch nova e já entra nela.
+# teste/ci-vermelho: uma branch só para o teste
 git switch -c teste/ci-vermelho
-# git checkout ... --: copia um arquivo de outra branch. Aqui, a regra antiga da Aula 1
+# git checkout origem -- arquivo: copia um arquivo de outra branch para cá.
+# Aqui, o fct_pedidos.sql da Aula 1, com a regra antiga do dia da reunião
 git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
-# git commit -am: salva no Git todas as mudanças, com uma mensagem
+# git commit: salva as mudanças no Git.
+# O -a inclui todos os arquivos alterados e o -m traz a mensagem
 git commit -am "test: merge bloqueado"
 # git push: envia a branch de teste para o GitHub
 git push -u origin teste/ci-vermelho
@@ -141,7 +157,8 @@ git push -u origin teste/ci-vermelho
 ```bash
 # git switch: troca para outra branch. Aqui, a branch da Aula 3
 git switch aula-03-ci-cd
-# git branch -D: apaga a branch de teste, que não é mais necessária
+# git branch -D: apaga a branch de teste, que não é mais necessária.
+# O -D apaga mesmo sem ela ter entrado na branch principal
 git branch -D teste/ci-vermelho
 ```
 
