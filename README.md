@@ -17,6 +17,7 @@ Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco)
 **1. Trocar para a branch da Aula 2.** Se você está no Codespace da Aula 1, troque de branch. Se preferir, abra um Codespace novo direto na branch `aula-02-testes`.
 
 ```bash
+# git switch: troca para outra branch. Aqui, a branch da Aula 2
 git switch aula-02-testes
 ```
 
@@ -25,8 +26,11 @@ Resultado esperado: `Switched to a new branch 'aula-02-testes'` (ou `Switched to
 **2. Rodar o pipeline e ver o número da reunião.**
 
 ```bash
+# Roda a ingestão: lê os CSVs da pasta data/ e grava no banco (camada raw)
 python -m src.ingestao
+# dbt run: monta as tabelas do dbt (staging e fct_pedidos)
 dbt run
+# Mostra o faturamento do mês, o número que vai para o relatório
 python scripts/faturamento.py
 ```
 
@@ -37,19 +41,23 @@ Resultado esperado: `1000`, `1000` e `3000` linhas carregadas, `PASS=3` e `Fatur
 **1. Ler a regra do faturamento em Python.** A função recebe uma lista de pedidos e devolve só os que entram no faturamento. Repare que ela só tira os cancelados.
 
 ```bash
+# code: abre o arquivo no editor. Aqui, a regra do faturamento em Python
 code src/transformacoes.py
 ```
 
 **2. Criar a pasta de testes.** O `mkdir` cria a pasta `tests`. O `touch` cria o arquivo vazio `__init__.py`, que avisa o Python que a pasta faz parte do projeto.
 
 ```bash
+# mkdir: cria uma pasta. Aqui, a pasta tests, onde ficam os testes
 mkdir -p tests
+# touch: cria um arquivo vazio. O __init__.py avisa o Python que a pasta faz parte do projeto
 touch tests/__init__.py
 ```
 
 **3. Criar o arquivo de testes.** O comando abre um arquivo novo no editor. Cole o código abaixo, já comentado, e salve com **Ctrl+S**.
 
 ```bash
+# code: cria e abre o arquivo de testes em Python (cole o código e salve com Ctrl+S)
 code tests/test_transformacoes.py
 ```
 
@@ -87,6 +95,7 @@ def test_remove_pedidos_estornados():
 **4. Rodar os testes.** O `pytest` procura os testes da pasta `tests/` e roda um por um. O `-v` mostra o nome de cada teste.
 
 ```bash
+# pytest: roda todos os testes da pasta tests. O -v mostra o nome de cada teste
 pytest -v
 ```
 
@@ -107,6 +116,7 @@ por
 Salve e rode os testes de novo.
 
 ```bash
+# pytest: roda todos os testes da pasta tests. O -v mostra o nome de cada teste
 pytest -v
 ```
 
@@ -117,7 +127,9 @@ Resultado esperado: `3 passed`. A regra foi corrigida, e o teste confirma.
 **1. Rodar a ingestão duas vezes seguidas.** Se o pipeline não fosse idempotente, a segunda vez somaria os pedidos de novo.
 
 ```bash
+# Roda a ingestão: lê os CSVs da pasta data/ e grava no banco (camada raw)
 python -m src.ingestao
+# Roda a ingestão de novo: se nada duplicar, o pipeline é idempotente
 python -m src.ingestao
 ```
 
@@ -128,6 +140,7 @@ Resultado esperado: `raw.pedidos: 3000 linhas` nas duas vezes. Nada duplicou.
 **1. Criar o teste da regra do faturamento no dbt.** Abre um arquivo novo. Cole o código abaixo e salve com **Ctrl+S**. Cada unit test inventa alguns pedidos e confere o que o `fct_pedidos` devolve.
 
 ```bash
+# code: cria e abre o arquivo com o teste da regra no dbt (cole o código e salve)
 code models/marts/_marts.yml
 ```
 
@@ -167,6 +180,7 @@ unit_tests:
 **2. Criar o teste do dado real.** Abre outro arquivo novo. Cole o código abaixo e salve com **Ctrl+S**. Ele confere os pedidos que chegaram: sem repetidos, sem vazios e só com os status que a loja conhece.
 
 ```bash
+# code: cria e abre o arquivo com o teste do dado real (cole o código e salve)
 code models/staging/_staging.yml
 ```
 
@@ -194,6 +208,7 @@ models:
 **3. Rodar modelos e testes juntos.** O `dbt build` roda os modelos e os testes na ordem certa.
 
 ```bash
+# dbt build: monta as tabelas e roda os testes, na ordem certa
 dbt build
 ```
 
@@ -202,6 +217,7 @@ Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados` e `ERR
 **4. Corrigir a regra do faturamento no dbt.** Abra o `fct_pedidos.sql`:
 
 ```bash
+# code: abre a regra do faturamento no dbt
 code models/marts/fct_pedidos.sql
 ```
 
@@ -220,7 +236,9 @@ where status not in ('cancelado', 'estornado')
 Salve e rode de novo:
 
 ```bash
+# dbt build: monta as tabelas e roda os testes, na ordem certa
 dbt build
+# Mostra o faturamento do mês, o número que vai para o relatório
 python scripts/faturamento.py
 ```
 
