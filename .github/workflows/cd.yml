@@ -3,6 +3,7 @@ name: Deploy do pipeline
 on:
   push:
     branches: [main]             # merge na main dispara o deploy
+  workflow_dispatch:             # botão "Run workflow" na aba Actions
 
 jobs:
   testes:
