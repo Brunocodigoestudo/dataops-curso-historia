@@ -10,11 +10,9 @@ Na reunião de resultados, o relatório mostrou um faturamento de outubro difere
 
 ## Comandos da Aula 2 · Testes automatizados
 
-Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-02-testes`, que já tem a regra corrigida e os testes prontos. Para mostrar o erro, você traz de volta, de propósito, a regra antiga da Aula 1.
+Roteiro da aula: copie um bloco de cada vez (botão de copiar no canto do bloco), cole no terminal do Codespace e confira o resultado. Nesta aula você trabalha na própria branch `aula-02-testes`. Ela começa do jeito que estava no dia da reunião: a regra do faturamento ainda soma os estornos, e os testes já estão escritos. Os testes vão mostrar o erro, você corrige uma linha e os testes confirmam a correção.
 
-Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhum teste avisou. Agora os testes provam o erro e mostram a correção.
-
-### Antes de começar · entrar na branch da aula
+### Antes de começar · entrar na branch e ver o número errado
 
 **1. Trocar para a branch da Aula 2.** Se você está no Codespace da Aula 1, troque de branch. Se preferir, abra um Codespace novo direto na branch `aula-02-testes`.
 
@@ -22,19 +20,21 @@ Na Aula 1 você achou a causa: o pedido estornado entrou no faturamento, e nenhu
 git switch aula-02-testes
 ```
 
-Resultado esperado: `Switched to a new branch 'aula-02-testes'` (ou `Switched to branch`). Se aparecer um erro dizendo que arquivos seriam sobrescritos, rode `git reset --hard` e tente de novo: ele descarta as mudanças que ficaram da aula anterior.
+Resultado esperado: `Switched to a new branch 'aula-02-testes'` (ou `Switched to branch`). Se aparecer um erro dizendo que arquivos seriam sobrescritos, rode `git reset --hard` e tente de novo.
 
-**2. Carregar os dados no banco.**
+**2. Rodar o pipeline e ver o número da reunião.**
 
 ```bash
 python -m src.ingestao
+dbt run
+python scripts/faturamento.py
 ```
 
-Resultado esperado: `1000`, `1000` e `3000` linhas carregadas.
+Resultado esperado: `1000`, `1000` e `3000` linhas carregadas, `PASS=3` e `Faturamento de outubro: R$ 333.739,80 em 2546 pedidos`. É o número errado da reunião: o financeiro fechou `R$ 315.488,80`.
 
 ### 2.1 · A pirâmide de testes · prática 1 de 2
 
-**1. Ler a regra e o teste do estorno.** A regra é uma função pura: recebe uma lista de pedidos e devolve só os que entram no faturamento. O `test_remove_pedidos_estornados` é o erro da reunião virando teste.
+**1. Ler a regra e o teste do estorno.** A regra recebe uma lista de pedidos e devolve só os que entram no faturamento. Repare que ela só tira os cancelados. O `test_remove_pedidos_estornados` diz o que deveria acontecer com um estorno.
 
 ```bash
 code src/transformacoes.py
@@ -47,15 +47,15 @@ code tests/test_transformacoes.py
 pytest -v
 ```
 
-Resultado esperado: `6 passed`.
+Resultado esperado: `1 failed, 5 passed`. O teste que falhou é o `test_remove_pedidos_estornados`: o teste provou o erro da reunião.
 
-**3. Ver o teste pegar o erro da reunião, de propósito.** Em `src/transformacoes.py`, troque `not in ("cancelado", "estornado")` por `!= "cancelado"`, que é a regra antiga da Aula 1. Salve e rode:
+**3. Corrigir a regra.** Em `src/transformacoes.py`, troque `!= "cancelado"` por `not in ("cancelado", "estornado")`, salve e rode os testes de novo.
 
 ```bash
 pytest -v
 ```
 
-Resultado esperado: `1 failed`, no `test_remove_pedidos_estornados`. Desfaça com **Ctrl+Z**, salve e rode `pytest -v` de novo: `6 passed`.
+Resultado esperado: `6 passed`. A regra foi corrigida, e o teste confirma.
 
 ### 2.2 · Integração e idempotência · prática-relâmpago
 
@@ -77,20 +77,21 @@ code models/staging/_staging.yml
 code models/marts/_marts.yml
 ```
 
-**2. Trazer de volta a regra antiga, a da reunião.** O primeiro comando copia o `fct_pedidos` da Aula 1, que só tira os cancelados. O segundo roda os modelos e os testes na ordem do grafo.
+**2. Rodar modelos e testes juntos.** O `dbt build` roda os modelos e os testes na ordem do grafo.
 
 ```bash
-git checkout origin/aula-01-inicio -- models/marts/fct_pedidos.sql
 dbt build
 ```
 
 Resultado esperado: `FAIL 1` no unit test `valor_total_ignora_estornados` e `ERROR=1`. O teste pegou o erro da reunião: o pedido estornado entrou no faturamento.
 
-**3. Voltar a regra corrigida e conferir o faturamento.** O primeiro comando devolve o `fct_pedidos` desta branch, que tira cancelados e estornados.
+**3. Corrigir a regra do faturamento.** Abra o `fct_pedidos.sql`, troque `where status != 'cancelado'` por `where status not in ('cancelado', 'estornado')`, salve e rode de novo.
 
 ```bash
-git checkout HEAD -- models/marts/fct_pedidos.sql
 code models/marts/fct_pedidos.sql
+```
+
+```bash
 dbt build
 python scripts/faturamento.py
 ```
